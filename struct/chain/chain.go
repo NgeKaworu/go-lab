@@ -20,7 +20,7 @@ func (c *Chain) Len() (l int) {
 }
 
 // FromArr 数组转链表
-func FromArr(arr []interface{}) *Chain {
+func FromArr(arr []int) *Chain {
 	head := new(ListNode)
 	cur := head
 	for _, v := range arr {
@@ -32,7 +32,7 @@ func FromArr(arr []interface{}) *Chain {
 }
 
 // ToArr 链表转数组
-func (c *Chain) ToArr() (arr []interface{}) {
+func (c *Chain) ToArr() (arr []int) {
 	cursor := c.Head
 	for cursor.Next != nil {
 		arr = append(arr, cursor.Val)
@@ -51,14 +51,14 @@ func (c *Chain) String() (s string) {
 }
 
 // InsertH 头插法
-func (c *Chain) InsertH(val interface{}) *Chain {
+func (c *Chain) InsertH(val int) *Chain {
 	l := &ListNode{val, c.Head}
 	c.Head = l
 	return c
 }
 
 // InsertT 尾插法
-func (c *Chain) InsertT(val interface{}) *Chain {
+func (c *Chain) InsertT(val int) *Chain {
 	l := &ListNode{val, nil}
 	cursor := c.Head
 	for cursor.Next != nil {
@@ -69,10 +69,10 @@ func (c *Chain) InsertT(val interface{}) *Chain {
 }
 
 // Insert 增
-func (c *Chain) Insert(pos, val interface{}) *Chain {
+func (c *Chain) Insert(pos, val int) *Chain {
 	l := c.Find(pos)
 	if l != nil {
-		l.Insert(&ListNode{val, l.Next})
+		l.Insert(val)
 	} else {
 		log.Fatalf("not find pos as %v", pos)
 	}
@@ -80,7 +80,7 @@ func (c *Chain) Insert(pos, val interface{}) *Chain {
 }
 
 // Remove 删除
-func (c *Chain) Remove(pos interface{}) *Chain {
+func (c *Chain) Remove(pos int) *Chain {
 	pre := c.Head
 	for pre != nil && pre.Next != nil && pre.Next.Val != pos {
 		pre = pre.Next
@@ -95,7 +95,7 @@ func (c *Chain) Remove(pos interface{}) *Chain {
 }
 
 // Update 改
-func (c *Chain) Update(pos, val interface{}) *Chain {
+func (c *Chain) Update(pos, val int) *Chain {
 	l := c.Find(pos)
 	if l != nil {
 		l.Val = val
@@ -106,7 +106,7 @@ func (c *Chain) Update(pos, val interface{}) *Chain {
 }
 
 // Find 查
-func (c *Chain) Find(val interface{}) *ListNode {
+func (c *Chain) Find(val int) *ListNode {
 	cur := c.Head
 	for cur != nil && cur.Val != val {
 		cur = cur.Next
@@ -120,7 +120,7 @@ func (c *Chain) Find(val interface{}) *ListNode {
 }
 
 // Swap 交换节点位置
-func (c *Chain) Swap(n1, n2 interface{}) *Chain {
+func (c *Chain) Swap(n1, n2 int) *Chain {
 	if n1 == n2 {
 		log.Fatalf("same node")
 	}
@@ -158,7 +158,7 @@ func (c *Chain) Swap(n1, n2 interface{}) *Chain {
 }
 
 // HeadSwap 交换头节点和目标节点位置
-func (c *Chain) HeadSwap(val interface{}) *Chain {
+func (c *Chain) HeadSwap(val int) *Chain {
 
 	cur := c.Head
 	if val == cur.Val {
@@ -184,78 +184,58 @@ func (c *Chain) HeadSwap(val interface{}) *Chain {
 }
 
 // Sort 并归排序
-func Sort(head *ListNode) *Chain {
-	if head == nil {
-		return head
+func (c *Chain) Sort() *Chain {
+	head := c.Head
+	// 0 or 1 element.
+	if head == nil || head.Next == nil {
+		return c
 	}
-
-	length := 0
-	for node := head; node != nil; node = node.Next {
-		length++
+	// 2 pointers, if the fast point comes to the end, the slow one must be in the middle.
+	slow, fast := head, head
+	for fast != nil && fast.Next != nil && fast.Next.Next != nil {
+		slow, fast = slow.Next, fast.Next.Next
 	}
-
-	dummyHead := &ListNode{Next: head}
-
-	merge := func(head1, head2 *ListNode) *ListNode {
-		dummyHead := &ListNode{}
-		temp, temp1, temp2 := dummyHead, head1, head2
-		for temp1 != nil && temp2 != nil {
-			if temp1.Val <= temp2.Val {
-				temp.Next = temp1
-				temp1 = temp1.Next
+	// split into 2 parts.
+	n := slow.Next
+	slow.Next = nil
+	// Sort recursivley
+	merge := func(c1 *Chain, c2 *Chain) *Chain {
+		node1, node2 := c1.Head, c2.Head
+		// Create a new empty list.
+		node := &ListNode{Val: 0}
+		current := node
+		// Compare one by one, put the smaller value into the new list.
+		for node1 != nil && node2 != nil {
+			if node1.Val <= node2.Val {
+				current.Next = node1
+				node1 = node1.Next
 			} else {
-				temp.Next = temp2
-				temp2 = temp2.Next
+				current.Next = node2
+				node2 = node2.Next
 			}
-			temp = temp.Next
+			current = current.Next
 		}
-		if temp1 != nil {
-			temp.Next = temp1
-		} else if temp2 != nil {
-			temp.Next = temp2
+		if node1 != nil {
+			current.Next = node1
+			node1 = node1.Next
 		}
-		return dummyHead.Next
+		if node2 != nil {
+			current.Next = node2
+			node2 = node2.Next
+		}
+		return &Chain{node.Next}
 	}
-	for subLength := 1; subLength < length; subLength <<= 1 {
-		prev, cur := dummyHead, dummyHead.Next
-		for cur != nil {
-			head1 := cur
-			for i := 1; i < subLength && cur.Next != nil; i++ {
-				cur = cur.Next
-			}
-
-			head2 := cur.Next
-			cur.Next = nil
-			cur = head2
-			for i := 1; i < subLength && cur != nil && cur.Next != nil; i++ {
-				cur = cur.Next
-			}
-
-			var next *ListNode
-			if cur != nil {
-				next = cur.Next
-				cur.Next = nil
-			}
-
-			prev.Next = merge(head1, head2)
-
-			for prev.Next != nil {
-				prev = prev.Next
-			}
-			cur = next
-		}
-	}
-	return dummyHead.Next
+	return merge((&Chain{head}).Sort(), (&Chain{n}).Sort())
 }
 
 // ListNode 节点
 type ListNode struct {
-	Val  interface{}
+	Val  int
 	Next *ListNode
 }
 
 // Insert 向节点后插入
-func (l *ListNode) Insert(val interface{}) *ListNode {
+func (l *ListNode) Insert(val int) *ListNode {
 	n := &ListNode{val, l.Next}
 	l.Next = n
 	return l
