@@ -27,9 +27,8 @@ func TestChain(t *testing.T) {
 	fmt.Println(c.Remove(114))
 	fmt.Println(c.Find(5))
 
-	// // fmt.Println(c.Swap(2, 8))
-	// // fmt.Println(c.Swap(9, 8))
-	// // fmt.Println(c.HeadSwap(-1))
-	// fmt.Println(c.ToArr())
-	// fmt.Println(c.Sort())
+	fmt.Println(c.Swap(8, 9))
+	fmt.Println(c.Swap(9, 7))
+	fmt.Println(c.HeadSwap(-1))
+	fmt.Println(c.Sort())
 }

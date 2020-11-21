@@ -1,7 +1,6 @@
 package chain
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 )
@@ -139,9 +138,13 @@ func (c *Chain) Swap(n1, n2 int) *Chain {
 	}
 
 	cur := c.Head
+	// 头节点处理
+	if n1 == cur.Val {
+		return c.HeadSwap(n2)
+	}
 
-	if n1 == cur.Val || n2 == cur.Val {
-		log.Fatalf("Head node swap please use HeadSwap method")
+	if n2 == cur.Val {
+		return c.HeadSwap(n1)
 	}
 
 	var l1, l2 *ListNode
@@ -153,13 +156,24 @@ func (c *Chain) Swap(n1, n2 int) *Chain {
 		if cur.Next.Val == n2 {
 			l2 = cur
 		}
+		cur = cur.Next
 	}
 
 	if l1 == nil || l2 == nil {
 		log.Fatalf("n1 or n2 not found")
 	}
 
-	// 下面建议画图理解
+	// 相邻节点处理
+	if l1.Val == l2.Next.Val || l2.Val == l1.Next.Val {
+		front := l1
+		if l2.Next.Val == l1.Val {
+			front = l2
+		}
+		front.Next, front.Next.Next, front.Next.Next.Next = front.Next.Next, front.Next.Next.Next, front.Next
+		return c
+	}
+
+	// 不相邻节点处理, 下面建议画图理解
 	t := l1.Next.Next
 	l1.Next.Next = l2.Next.Next
 	l2.Next.Next = t
@@ -178,20 +192,27 @@ func (c *Chain) HeadSwap(val int) *Chain {
 		log.Fatalf("%v and Head is same", val)
 	}
 
-	var l *ListNode
+	// 相邻处理
+	if val == cur.Next.Val {
+		t := cur.Next
+		cur.Next, cur.Next.Next = cur.Next.Next, cur
+		c.Head = t
+		return c
+	}
+
 	// 找到要交换节点的前一个节点
-	for cur.Next != nil && l == nil {
-		if cur.Next.Val == val {
-			l = cur
-		}
+	for cur.Next != nil && cur.Next.Val != val {
+		cur = cur.Next
 	}
 
-	if l == nil {
-		log.Fatal("val not found")
+	if cur.Next == nil {
+		log.Fatalf("value as %v not found", val)
 	}
 
-	t := l.Next
-	c.Head.Next, l.Next, t.Next = nil, c.Head, c.Head.Next
+	t := cur.Next
+	head := c.Head
+	// 交换最好做图理解, 比较绕
+	head.Next, cur.Next, cur.Next.Next = cur.Next.Next, head, head.Next
 	c.Head = t
 	return c
 }
@@ -239,8 +260,6 @@ func (c *Chain) Sort() *Chain {
 		return &Chain{node.Next}
 	}
 	l1, l2 := &Chain{head}, &Chain{n}
-	fmt.Println("l1: ", l1)
-	fmt.Println("l2: ", l2)
 	return merge((l1).Sort(), (l2).Sort())
 }
 
