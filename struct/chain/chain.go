@@ -1,7 +1,9 @@
 package chain
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 )
 
 // Chain 链表
@@ -21,20 +23,22 @@ func (c *Chain) Len() (l int) {
 
 // FromArr 数组转链表
 func FromArr(arr []int) *Chain {
-	head := new(ListNode)
-	cur := head
-	for _, v := range arr {
+	cur := new(ListNode)
+	c := &Chain{cur}
+	for k, v := range arr {
 		cur.Val = v
-		cur.Next = new(ListNode)
+		if k != len(arr)-1 {
+			cur.Next = new(ListNode)
+		}
 		cur = cur.Next
 	}
-	return &Chain{head}
+	return c
 }
 
 // ToArr 链表转数组
 func (c *Chain) ToArr() (arr []int) {
 	cursor := c.Head
-	for cursor.Next != nil {
+	for cursor != nil {
 		arr = append(arr, cursor.Val)
 		cursor = cursor.Next
 	}
@@ -44,7 +48,7 @@ func (c *Chain) ToArr() (arr []int) {
 func (c *Chain) String() (s string) {
 	cur := c.Head
 	for cur != nil {
-		s += "val -> "
+		s += strconv.Itoa(cur.Val) + " -> "
 		cur = cur.Next
 	}
 	return
@@ -59,12 +63,11 @@ func (c *Chain) InsertH(val int) *Chain {
 
 // InsertT 尾插法
 func (c *Chain) InsertT(val int) *Chain {
-	l := &ListNode{val, nil}
 	cursor := c.Head
-	for cursor.Next != nil {
+	for cursor.Next.Next != nil {
 		cursor = cursor.Next
 	}
-	cursor.Next = l
+	cursor.Insert(val)
 	return c
 }
 
@@ -82,15 +85,25 @@ func (c *Chain) Insert(pos, val int) *Chain {
 // Remove 删除
 func (c *Chain) Remove(pos int) *Chain {
 	pre := c.Head
+	// 头节点删除
+	if pre.Val == pos {
+		// 被删了的节点要赋值为空, 方便垃圾回收
+		c.Head, pre.Next = pre.Next, nil
+		return c
+	}
+
+	// 找目标节点上一个节点
 	for pre != nil && pre.Next != nil && pre.Next.Val != pos {
 		pre = pre.Next
 	}
-	if pre != nil {
-		// pre.Next是目标节点, pre.Next.Next是目标节点对下一节点的引用,设置为空可以有效出发垃圾回收
-		pre.Next, pre.Next.Next = pre.Next.Next, nil
-	} else {
+
+	// 如果已经是尾节点, 说明没找着
+	if pre.Next == nil {
 		log.Fatalf("not find pos as %v", pos)
 	}
+
+	// pre.Next是目标节点, pre.Next.Next是目标节点对下一节点的引用,设置为空可以有效出发垃圾回收
+	pre.Next, pre.Next.Next = pre.Next.Next, nil
 	return c
 }
 
@@ -179,8 +192,8 @@ func (c *Chain) HeadSwap(val int) *Chain {
 
 	t := l.Next
 	c.Head.Next, l.Next, t.Next = nil, c.Head, c.Head.Next
-
-	return &Chain{t}
+	c.Head = t
+	return c
 }
 
 // Sort 并归排序
@@ -225,7 +238,10 @@ func (c *Chain) Sort() *Chain {
 		}
 		return &Chain{node.Next}
 	}
-	return merge((&Chain{head}).Sort(), (&Chain{n}).Sort())
+	l1, l2 := &Chain{head}, &Chain{n}
+	fmt.Println("l1: ", l1)
+	fmt.Println("l2: ", l2)
+	return merge((l1).Sort(), (l2).Sort())
 }
 
 // ListNode 节点
