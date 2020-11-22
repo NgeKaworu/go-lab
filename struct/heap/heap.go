@@ -1,5 +1,7 @@
 package heap
 
+import "strconv"
+
 // Heap 堆
 type Heap struct {
 	heap []int
@@ -16,13 +18,26 @@ func Heapify(arr []int) *Heap {
 
 // Len 长度
 func (h *Heap) Len() int {
-	return h.Len()
+	return len(h.heap)
+}
+
+func (h *Heap) String() (s string) {
+	t, l := 1, 1
+	for k, v := range h.heap {
+		s += " " + strconv.Itoa(v)
+		if k == (l - 1) {
+			s += "\n"
+			t <<= 1
+			l += t
+		}
+	}
+	return
 }
 
 // Insert 插入
 func (h *Heap) Insert(val int) *Heap {
 	h.heap = append(h.heap, val)
-	h.swim(h.Len())
+	h.swim(h.Len() - 1)
 	return h
 }
 
@@ -35,23 +50,6 @@ func (h *Heap) Pop() (res int) {
 	return
 }
 
-// parent 返回父节点
-func (h *Heap) parent(pos int) int {
-	return (pos - 1) / 2
-}
-
-// left 返回左节点
-func (h *Heap) left(pos int) int {
-	return pos*2 + 1
-
-}
-
-// right 返回左节点
-func (h *Heap) right(pos int) int {
-	return pos*2 + 2
-
-}
-
 // swap 交换位置
 func (h *Heap) swap(p1, p2 int) *Heap {
 	h.heap[p1], h.heap[p2] = h.heap[p2], h.heap[p1]
@@ -60,11 +58,11 @@ func (h *Heap) swap(p1, p2 int) *Heap {
 
 // Swim 上浮
 func (h *Heap) swim(pos int) *Heap {
-	for pos > 0 && h.heap[pos] > h.heap[h.parent(pos)] {
-		// 如果第 k 个元素不是堆顶且比上层大
+	for pos > 0 && h.heap[pos] < h.heap[parent(pos)] {
+		// 如果第 k 个元素不是堆顶且比上层小
 		// 将 k 换上去
-		h.swap(pos, h.parent(pos))
-		pos = h.parent(pos)
+		h.swap(pos, parent(pos))
+		pos = parent(pos)
 	}
 	return h
 }
@@ -73,21 +71,38 @@ func (h *Heap) swim(pos int) *Heap {
 func (h *Heap) sink(pos int) *Heap {
 	l := h.Len()
 	// 如果沉到堆底，就沉不下去了
-	for h.left(pos) < l {
-		// 先假设左边节点较大
-		t := h.left(pos)
+	for left(pos) < l {
+		// 先假设左边节点较小
+		t := left(pos)
 		// 如果右边节点存在，比一下大小
-		if h.right(pos) < l && h.heap[t] < h.heap[h.right(pos)] {
-			t = h.right(pos)
+		if right(pos) < l && h.heap[t] > h.heap[right(pos)] {
+			t = right(pos)
 		}
-		// 结点 k 比俩孩子都大，就不必下沉了
-		if h.heap[t] < h.heap[pos] {
+		// 结点 k 比俩孩子都小，就不必下沉了
+		if h.heap[t] > h.heap[pos] {
 			break
 		}
-		// 否则，不符合最大堆的结构，下沉 k 结点
+		// 否则，不符合最小堆的结构，下沉 k 结点
 		h.swap(pos, t)
 		pos = t
 	}
 
 	return h
+}
+
+// parent 返回父节点
+func parent(pos int) int {
+	return (pos - 1) / 2
+}
+
+// left 返回左节点
+func left(pos int) int {
+	return pos*2 + 1
+
+}
+
+// right 返回左节点
+func right(pos int) int {
+	return pos*2 + 2
+
 }
