@@ -1,6 +1,9 @@
 package stack
 
-import "strconv"
+import (
+	"log"
+	"strconv"
+)
 
 // Stack 数据结构 栈
 type Stack struct {
@@ -27,6 +30,9 @@ func (s *Stack) Push(val int) *Stack {
 
 // Pop 出栈
 func (s *Stack) Pop() (res int) {
+	if s.Len() < 1 {
+		log.Fatal("Empty stack")
+	}
 	res = s.stack[s.Len()-1]
 	s.stack = s.stack[:s.Len()-1]
 	return
