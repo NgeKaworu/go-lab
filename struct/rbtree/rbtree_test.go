@@ -15,5 +15,7 @@ func TestRBTree(t *testing.T) {
 		Insert(10).
 		Insert(8)
 	fmt.Println(tree)
+	fmt.Println(tree.Remove(7))
+	fmt.Println(tree)
 
 }

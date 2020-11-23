@@ -12,12 +12,14 @@ type RBTree struct {
 
 // RBLeaf 红黑节点
 type RBLeaf struct {
-	key         int
-	left, right *RBLeaf
-	red         bool
+	key                 int
+	left, right, parent *RBLeaf
+	red                 bool
 }
 
 func (l *RBLeaf) insert(k *RBLeaf) {
+	// 绑个父元素
+	k.parent = l
 	// DFS 深度优先
 	if k.key <= l.key {
 		// 小于等于走左边
@@ -38,6 +40,25 @@ func (l *RBLeaf) insert(k *RBLeaf) {
 			l.right.insert(k)
 		}
 	}
+}
+
+// 用目标替换当前节点
+func (t *RBTree) replace(old, new *RBLeaf) {
+	if old == t.root {
+		// 如果要替换的是root
+		t.root = new
+	} else {
+		p := old.parent
+
+		if p.left == old {
+			p.left = new
+		}
+
+		if p.right == old {
+			p.right = new
+		}
+	}
+
 }
 
 // BFS 广度优先 打印
@@ -69,6 +90,21 @@ func (t *RBTree) String() (str string) {
 	return
 }
 
+// Find 查找
+func (t *RBTree) Find(k int) *RBLeaf {
+	cur := t.root
+	for cur != nil {
+		if k > cur.key {
+			cur = cur.right
+		} else if k < cur.key {
+			cur = cur.left
+		} else {
+			return cur
+		}
+	}
+	return nil
+}
+
 // Insert 插入 DFS
 func (t *RBTree) Insert(k int) *RBTree {
 	n := &RBLeaf{key: k, red: true}
@@ -82,7 +118,40 @@ func (t *RBTree) Insert(k int) *RBTree {
 }
 
 // Remove 删除
+// 删除逻辑
+// 如果同时有左右子叶, 则用右子叶的最左子叶代替位置(逻辑上 左子叶的最右子叶也可以),
+// 否则用存在的子叶代替
 func (t *RBTree) Remove(k int) *RBTree {
+	l := t.Find(k)
+	if l == nil {
+		return t
+	}
+	if l.left == nil && l.right == nil {
+		// 左右子叶都为空, 用nil代替
+		t.replace(l, nil)
+	} else if l.left != nil && l.right != nil {
+		// 左右子叶都不为空
+		// 找到右子叶的最左子叶节点
+		cur := l.right
+		for cur.left != nil {
+			cur = cur.left
+		}
+
+		// 从父节点用它的右树替换它
+		t.replace(cur, cur.right)
+		// 把原节点的左右子叶赋给目标
+		cur.left = l.left
+		cur.right = l.right
+		// 替换他
+		t.replace(l, cur)
+
+	} else if l.left == nil {
+		// 左子叶为空
+		t.replace(l, l.right)
+	} else {
+		// 右子叶为空
+		t.replace(l, l.left)
+	}
 
 	return t
 }
