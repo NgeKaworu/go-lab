@@ -79,12 +79,16 @@ func (l *RBLeaf) grandpa() *RBLeaf {
 
 // 用目标替换当前节点
 func (t *RBTree) replace(old, new *RBLeaf) {
+	if new != nil {
+		// 双向链 记得 改绑 父元素
+		new.parent = old.parent
+	}
+
 	if old == t.root {
 		// 如果要替换的是root
 		t.root = new
 	} else {
 		p := old.parent
-
 		if p.left == old {
 			p.left = new
 		}
@@ -104,11 +108,18 @@ func (t *RBTree) leftRotate(pivot *RBLeaf) *RBTree {
 	p := pivot.parent
 	// 父节点的右节点 指向目标(pviot)节点的左节点
 	p.right = pivot.left
+	// 记得双向绑定
+	if pivot.left != nil {
+		pivot.left.parent = p
+	}
 	// 目标(pviot)节点的左节点 指向 父节点
 	pivot.left = p
-	// 把目标节点替换成父节点
+	// 处理双向绑定
+	pivot.parent = nil
+	// 用目标节点替换成父节点
 	t.replace(p, pivot)
-
+	// 最后还需要在处理一次双向绑定
+	p.parent = pivot
 	return t
 }
 
@@ -120,10 +131,18 @@ func (t *RBTree) rightRotate(pivot *RBLeaf) *RBTree {
 	p := pivot.parent
 	// 父节点的左节点 指向目标(pviot)节点的右节点
 	p.left = pivot.right
+	if pivot.right != nil {
+		// 处理双向绑定
+		pivot.right.parent = p
+	}
 	// 目标(pviot)节点的右节点指向父节点
 	pivot.right = p
-	// 把目标节点替换成父节点
+	// 处理双向绑定
+	pivot.parent = nil
+	// 用目标节点替换成父节点
 	t.replace(p, pivot)
+	// 最后还需要在处理一次双向绑定
+	p.parent = pivot
 	return t
 }
 
