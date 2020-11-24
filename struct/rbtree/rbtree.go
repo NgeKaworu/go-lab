@@ -42,6 +42,33 @@ func (l *RBLeaf) insert(k *RBLeaf) {
 	}
 }
 
+// 返回叔父节点
+func (l *RBLeaf) uncle() *RBLeaf {
+	p := l.parent
+	// 无父 说明是根
+	if p == nil {
+		return nil
+	}
+
+	// 返回叔父
+	if l == p.left {
+		return p.right
+	}
+
+	return p.left
+
+}
+
+// 返回祖父节点
+func (l *RBLeaf) grandpa() *RBLeaf {
+	// 节点不是根
+	if l.parent != nil {
+		return l.parent.parent
+	}
+
+	return nil
+}
+
 // 用目标替换当前节点
 func (t *RBTree) replace(old, new *RBLeaf) {
 	if old == t.root {
@@ -59,6 +86,37 @@ func (t *RBTree) replace(old, new *RBLeaf) {
 		}
 	}
 
+}
+
+// 左旋
+func (t *RBTree) leftRotate(pivot *RBLeaf) *RBTree {
+	if pivot == t.root {
+		return t
+	}
+	p := pivot.parent
+	// 父节点的右节点 指向目标(pviot)节点的左节点
+	p.right = pivot.left
+	// 目标(pviot)节点的左节点 指向 父节点
+	pivot.left = p
+	// 把目标节点替换成父节点
+	t.replace(p, pivot)
+
+	return t
+}
+
+// 右旋
+func (t *RBTree) rightRotate(pivot *RBLeaf) *RBTree {
+	if pivot == t.root {
+		return t
+	}
+	p := pivot.parent
+	// 父节点的左节点 指向目标(pviot)节点的右节点
+	p.left = pivot.right
+	// 目标(pviot)节点的右节点指向父节点
+	pivot.right = p
+	// 把目标节点替换成父节点
+	t.replace(p, pivot)
+	return t
 }
 
 // BFS 广度优先 打印
