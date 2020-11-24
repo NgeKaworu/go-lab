@@ -5,6 +5,14 @@ import (
 	"math"
 )
 
+// 红黑树规则
+// 1. 节点是红色或黑色。
+// 2. 根是黑色。
+// 3. 所有叶子都是黑色（叶子是NIL节点）。
+// 4. 每个红色节点必须有两个黑色的子节点。（从每个叶子到根的所有路径上不能有两个连续的红色节点。）
+// 5. 从任一节点到其每个叶子的所有简单路径都包含相同数目的黑色节点。
+// https://zh.wikipedia.org/wiki/%E7%BA%A2%E9%BB%91%E6%A0%91
+
 // RBTree 红黑树
 type RBTree struct {
 	root *RBLeaf
@@ -170,9 +178,93 @@ func (t *RBTree) Insert(k int) *RBTree {
 		t.root = n
 	} else {
 		t.root.insert(n)
+		// 插入自平衡
 	}
+	t.insertCheck1(n)
 
 	return t
+}
+
+func (t *RBTree) insertCheck1(l *RBLeaf) {
+	if l.parent == nil {
+		// 如果是根节点
+		// 根据: 2. 根是黑色。
+		// 设为黑色
+		l.red = false
+	} else {
+		// 不是根节点, 走规则2
+		t.insertCheck2(l)
+	}
+}
+
+func (t *RBTree) insertCheck2(l *RBLeaf) {
+	// 因为插入节点是红色
+	if l.parent.red == false {
+		// 父节点是黑色, ok
+		return
+	}
+	// 不是黑色, 则与: 4. 每个红色节点必须有两个黑色的子节点。（从每个叶子到根的所有路径上不能有两个连续的红色节点。）
+	// 冲突, 走规则3
+	t.insertCheck3(l)
+}
+
+func (t *RBTree) insertCheck3(l *RBLeaf) {
+	// 如果 父(insertCheck2己证明)、叔父都是红色
+	if l.uncle() != nil && l.uncle().red == true {
+		// 把父、叔、爷节点变色
+		l.parent.red = false
+		l.uncle().red = false
+		l.grandpa().red = true
+		// 递归检查 爷节点
+		t.insertCheck1(l.grandpa())
+	} else {
+		t.insertCheck4(l)
+	}
+
+}
+
+func (t *RBTree) insertCheck4(l *RBLeaf) {
+	// 这个场景是叔节点为空或是黑色
+	// 我们先要做一次旋转, 旋转规则如下:
+	if l == l.parent.right && l.parent == l.grandpa().left {
+		// 如果目标在父节点右边, 且父节点在爷节点左边, 左旋
+		//         黑             红
+		//        / \     染色    / \
+		//       红  黑    ->    黑  黑
+		//      /  \           /  \
+		//     Nil (红)       Nil (红)
+		t.leftRotate(l)
+		// 因为左旋, 这里l.left是之前的父节点
+		l = l.left
+	} else if l == l.parent.left && l.parent == l.grandpa().right {
+		// 如果目标在父节点左边, 且父节点在爷节点右边, 右旋
+		t.rightRotate(l)
+		// 因为右旋, 这里l.right是之前的父节点
+		l = l.right
+	}
+
+	// 第二次旋转
+	t.insertCheck5(l)
+}
+
+func (t *RBTree) insertCheck5(l *RBLeaf) {
+	// 第二次旋转, 先把父元素染黑、爷元素染红
+	l.parent.red = false
+	l.grandpa().red = true
+	if l == l.parent.left && l.parent == l.grandpa().left {
+		// 当目标在父节点左侧且父也在爷左时
+		//         黑             红               黑
+		//        / \     染色    / \      右旋    / \
+		//       红  黑    ->    黑  黑     -->  (红) 红
+		//      /               /                     \
+		//     (红)           (红)                     黑
+		// 右旋其父
+		t.rightRotate(l.parent)
+	} else {
+		// 否则就是述情况的镜像
+		// 左旋其父
+		t.leftRotate(l.parent)
+	}
 }
 
 // Remove 删除
