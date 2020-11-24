@@ -44,18 +44,18 @@ func (l *RBLeaf) insert(k *RBLeaf) {
 
 // 返回叔父节点
 func (l *RBLeaf) uncle() *RBLeaf {
-	p := l.parent
-	// 无父 说明是根
-	if p == nil {
+
+	// 无祖父 或 无父 说明是根 或 根的左右子叶
+	if l.parent == nil || l.grandpa() == nil {
 		return nil
 	}
 
 	// 返回叔父
-	if l == p.left {
-		return p.right
+	if l.parent == l.grandpa().left {
+		return l.grandpa().right
 	}
 
-	return p.left
+	return l.grandpa().left
 
 }
 
