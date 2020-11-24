@@ -151,7 +151,21 @@ func (t *RBTree) String() (str string) {
 	// 初始化队列
 	queue := []*RBLeaf{t.root}
 	count, line := 0.0, 1.0
-	for len(queue) != 0 {
+	for true {
+		// 退出条件
+		// 如果某一行的下一行都是空
+		if float64(len(queue)) == math.Pow(2, line) {
+			every := true
+			for _, v := range queue {
+				if v != nil {
+					every = false
+					break
+				}
+			}
+			if every == true {
+				break
+			}
+		}
 		// 插入换行
 		// 高度h = h(n) = log2(n) + 1, n是节点数
 		h := math.Floor(math.Log2(count + 1))
@@ -169,6 +183,8 @@ func (t *RBTree) String() (str string) {
 			queue = append(queue, leaf.left, leaf.right)
 		} else {
 			str += " nil "
+			// 保证格式一致
+			queue = append(queue, nil, nil)
 		}
 
 	}
