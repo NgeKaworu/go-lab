@@ -7,15 +7,17 @@ import (
 
 func TestRBTree(t *testing.T) {
 	tree := new(RBTree)
-	tree.Insert(7).
-		Insert(3).
-		Insert(4).
-		Insert(1).
-		Insert(9).
-		Insert(10).
-		Insert(8)
+	fmt.Println(tree.Insert(7))
+	fmt.Println(tree.Insert(3))
+	fmt.Println(tree.Insert(4))
+	fmt.Println(tree.Insert(1))
+	fmt.Println(tree.Insert(9))
+	fmt.Println(tree.Insert(10))
+	fmt.Println(tree.Insert(8))
+
+	fmt.Println(tree.Remove(4))
 	fmt.Println(tree)
-	// fmt.Println(tree.Remove(7))
-	// fmt.Println(tree)
+	fmt.Println(tree.Remove(7))
+	fmt.Println(tree)
 
 }

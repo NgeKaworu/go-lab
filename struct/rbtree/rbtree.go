@@ -225,15 +225,15 @@ func (t *RBTree) Insert(k int) *RBTree {
 		t.root = n
 	} else {
 		t.root.insert(n)
-		// 插入自平衡
 	}
-	t.insertCheck(n)
+	// 插入自平衡
+	t.insertBlance(n)
 
 	return t
 }
 
-// 插入检查
-func (t *RBTree) insertCheck(n *TreeNode) {
+// 插入自平衡
+func (t *RBTree) insertBlance(n *TreeNode) {
 	if n.parent == nil {
 		// 如果是根节点
 		// 根据: 2. 根是黑色。
@@ -248,14 +248,14 @@ func (t *RBTree) insertCheck(n *TreeNode) {
 	// 父节点是红色
 	// 则与规则4冲突 —— 每个红色节点必须有两个黑色的子节点。（从每个叶子到根的所有路径上不能有两个连续的红色节点。）
 	if n.parent.red == true {
-		// 如果 父(insertCheck2己证明)、叔父都是红色
+		// 如果 父、叔父都是红色
 		if n.uncle() != nil && n.uncle().red == true {
 			// 把父、叔、爷节点变色
 			n.parent.red = false
 			n.uncle().red = false
 			n.grandpa().red = true
 			// 递归检查 爷节点
-			t.insertCheck(n.grandpa())
+			t.insertBlance(n.grandpa())
 		} else {
 			// 这个场景是叔节点为空或是黑色
 			// 假设我们的树不是“顺拐” 要先做一次旋转, 旋转规则如下:
@@ -300,40 +300,237 @@ func (t *RBTree) insertCheck(n *TreeNode) {
 }
 
 // Remove 删除
-// 删除逻辑
-// 如果同时有左右子树, 则用右的最左子树代替位置(逻辑上 左子树的最右子树也可以),
-// 否则用存在的子树代替
-func (t *RBTree) Remove(k int) *RBTree {
+/** 删除逻辑
+我们先简化问题, 把删除两个儿子节点的问题统一成删除一个儿子的问题;
+对于二叉查找树，在删除带有两个非叶子儿子的节点的时候，
+我们要么找到它左子树中的最大元素、要么找到它右子树中的最小元素，
+并把它的值转移到要删除的节点中。
+我们接着删除我们从中复制出值的那个节点，它必定有少于两个非叶子的儿子。
+因为只是复制了一个值（没有复制颜色），不违反任何性质，
+这就把问题简化为如何删除最多有一个儿子的节点的问题。
+它不关心这个节点是最初要删除的节点还是我们从中复制出值的那个节点。
+*/
+func (t *RBTree) Remove(k int) bool {
 	n := t.Find(k)
 	if n == nil {
-		return t
+		return false
 	}
-	if n.left == nil && n.right == nil {
-		// 左右子树都为空, 用nil代替
-		t.replace(n, nil)
-	} else if n.left != nil && n.right != nil {
-		// 左右子树都不为空
-		// 找到右子树的最左子树节点
-		cur := n.right
-		for cur.left != nil {
-			cur = cur.left
+	// 找到节点, 节点没有右节点, 只删除一个儿子成立
+	if n.right == nil {
+		t.RemoveOne(n)
+	} else {
+		// 找到它右子树中的最小元素
+		// 最小值没有左树, 只删除一个儿子成立
+		smallest := n.right
+		for smallest.left != nil {
+			smallest = smallest.left
+		}
+		// 用最小值替换目标值
+		// PS: 因为只是复制了一个值（没有复制颜色），不违反任何性质
+		n.key = smallest.key
+		// 删除最小值的节点
+		t.RemoveOne(smallest)
+	}
+
+	return true
+}
+
+// RemoveOne 删除只有一个儿子的节点
+func (t *RBTree) RemoveOne(n *TreeNode) {
+	child := n.left
+	if n.right != nil {
+		child = n.right
+	}
+
+	// n是root
+	if n == t.root {
+		// 无子
+		if child == nil {
+			n = nil
+			t.root = nil
+		} else {
+			// 有子
+			n = nil
+			t.root = child
+			// 根必须是黑
+			child.red = false
 		}
 
-		// 从父节点用它的右树替换它
-		t.replace(cur, cur.right)
-		// 把原节点的左右子树赋给目标
-		cur.left = n.left
-		cur.right = n.right
-		// 替换他
-		t.replace(n, cur)
-
-	} else if n.left == nil {
-		// 左子树为空
-		t.replace(n, n.right)
-	} else {
-		// 右子树为空
-		t.replace(n, n.left)
+		return
 	}
 
-	return t
+	// 用child代替n的位置
+	p := n.parent
+	if n == p.left {
+		p.left = child
+	} else {
+		p.right = child
+	}
+	if child != nil {
+		child.parent = p
+	}
+
+	/** 自平衡
+	如果我们删除一个红色节点（此时该节点的儿子将都为叶子节点），
+	它的父亲和儿子一定是黑色的。所以我们可以简单的用它的黑色儿子替换它，
+	并不会破坏性质3和性质4。通过被删除节点的所有路径只是少了一个红色节点，
+	这样可以继续保证性质5。另一种简单情况是在被删除节点是黑色而它的儿子是红色的时候。
+	如果只是去除这个黑色节点，用它的红色儿子顶替上来的话，会破坏性质5，
+	但是如果我们重绘它的儿子为黑色，则曾经通过它的所有路径将通过它的黑色儿子，
+	这样可以继续保持性质5。
+	1. 节点是红色或黑色。
+	2. 根是黑色。
+	3. 所有叶子都是黑色（叶子是NIL节点）。
+	4. 每个红色节点必须有两个黑色的子节点。（从每个叶子到根的所有路径上不能有两个连续的红色节点。）
+	5. 从任一节点到其每个叶子的所有简单路径都包含相同数目的黑色节点。
+	*/
+
+	// 删除节点是黑
+	if n.red == false {
+		// 删除节点 - 子节点为红
+		if child != nil && child.red == true {
+			// 不违反规则
+			child.red = false
+		} else {
+			/**
+			需要进一步讨论的是在要删除的节点和它的儿子二者都是黑色的时候，
+			这是一种复杂的情况（这种情况下该结点的两个儿子都是叶子结点，
+			否则若其中一个儿子是黑色非叶子结点，另一个儿子是叶子结点，
+			那么从该结点通过非叶子结点儿子的路径上的黑色结点数最小为2，
+			而从该结点到另一个叶子结点儿子的路径上的黑色结点数为1，违反了性质5）
+			*/
+			t.removeBlance(child)
+		}
+	}
+	n = nil
+}
+
+func (t *RBTree) removeBlance(n *TreeNode) {
+	// 前提 n 是 黑色
+
+	if n == nil {
+		return
+	}
+
+	if n.parent == nil {
+		// n是新 root
+		n.red = false
+		t.root = n
+		return
+	}
+
+	// 如果n的兄弟是红色
+	// n代替了原n父节点的位置, 所以n.sibling是n的原叔父节点
+	if n.sibling().red == true {
+		//
+		//         黑(P)         右旋+          黑(S)
+		//        /    \     对调P、S颜色       /    \
+		//     黑(n)   红(S)      -->       红(P)   黑(SR)
+		//             /  \                /  \
+		//         黑(SL) 黑(SR)        黑(n) 黑(SL)
+
+		n.parent.red = true
+		n.sibling().red = false
+		if n == n.parent.left {
+			t.leftRotate(n.sibling())
+		} else {
+			t.rightRotate(n.sibling())
+		}
+		// 这里做了一次 旋转, 但是根本上n的一侧还是删除了一个黑色节点, 违背了规则5
+		// 所以还要有后续处理
+	}
+
+	if n.red == false && n.sibling().red == false &&
+		(n.sibling().left == nil || n.sibling().left.red == false) &&
+		(n.sibling().right == nil || n.sibling().right.red == false) {
+		//
+		//         P(黑)                    P(黑)
+		//        /    \                   /    \
+		//     n(黑)   S(黑)    -->     n(黑)   S(红)
+		//             /  \                     /  \
+		//         SL(黑) SR(黑)             SL(黑) SR(黑)
+
+		/**
+		N的父亲、S和S的儿子都是黑色的。
+		在这种情形下，我们简单的重绘S为红色。
+		结果是通过S的所有路径，它们就是以前不通过N的那些路径，都少了一个黑色节点。
+		因为删除N的初始的父亲使通过N的所有路径少了一个黑色节点，这使事情都平衡了起来。
+		但是，通过P的所有路径现在比不通过P的路径少了一个黑色节点，所以仍然违反性质5。
+		要修正这个问题，我们要从头开始，在P上做重新平衡处理。
+		*/
+		n.sibling().red = true
+		t.removeBlance(n.parent)
+	} else if n.red == true && n.sibling().red == false &&
+		(n.sibling().left == nil || n.sibling().left.red == false) &&
+		(n.sibling().right == nil || n.sibling().right.red == false) {
+		//
+		//         P(红)                    P(黑)
+		//        /    \                   /    \
+		//     n(黑)   S(黑)    -->     n(黑)   S(红)
+		//             /  \                     /  \
+		//         SL(黑) SR(黑)             SL(黑) SR(黑)
+		/**
+		S和S的儿子都是黑色，但是N的父亲是红色。
+		在这种情形下，我们简单的交换N的兄弟和父亲的颜色。
+		这不影响不通过N的路径的黑色节点的数目，
+		但是它在通过N的路径上对黑色节点数目增加了一，
+		添补了在这些路径上删除的黑色节点。
+		*/
+		n.red = false
+		n.sibling().red = true
+	} else {
+		if n.sibling().red == false {
+			if n == n.parent.left &&
+				n.sibling().left != nil && n.sibling().left.red == true &&
+				(n.sibling().right == nil || n.sibling().right.red == false) {
+				//          P                        P
+				//        /    \                   /    \
+				//     n(黑)   S(黑)    -->     n(黑)   SL(黑)
+				//             /  \                        \
+				//         SL(红) SR(黑)                   S(红)
+				//											  \
+				//                                            SR(黑)
+				n.sibling().red = true
+				n.sibling().left.red = false
+				t.rightRotate(n.sibling().left)
+			} else if n == n.parent.right &&
+				(n.sibling().left == nil || n.sibling().left.red == false) &&
+				n.sibling().right != nil && n.sibling().right.red == true {
+				//           P                       P
+				//        /    \                   /    \
+				//      S(黑)  n(黑)    -->      SR(黑)  n(黑)
+				//      /  \                    /
+				//   SL(黑) SR(红)            S(红)
+				//							  /
+				//						   SL(黑)
+				n.sibling().red = true
+				n.sibling().right.red = false
+				t.leftRotate(n.sibling().right)
+			}
+		}
+		n.sibling().red = n.parent.red
+		n.parent.red = false
+		if n == n.parent.left {
+			n.sibling().right.red = false
+			t.leftRotate(n.sibling())
+			//			 P(黑)      			      SL()
+			//			/    \       		    	/    \
+			//		 n(黑)    SL()     左旋(SL)    P(黑)   S(黑)
+			//					\       -->		  /		   \
+			//				    S(红)       	n(黑)		SR(黑)
+			//						\
+			//					  SR(黑)
+		} else {
+			n.sibling().left.red = false
+			t.rightRotate(n.sibling())
+			//			 P(黑)      			      SL()
+			//			/    \       		    	/    \
+			//		  SL()   n(黑)    右旋(SL)    P(黑)   S(黑)
+			//		  /              	-->		  /		   \
+			//	    S(红)       				n(黑)		SR(黑)
+			//		/
+			//	 SR(黑)
+		}
+	}
+
 }
