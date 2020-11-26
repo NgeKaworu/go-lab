@@ -11,74 +11,87 @@ import (
 // 3. 所有叶子都是黑色（叶子是NIL节点）。
 // 4. 每个红色节点必须有两个黑色的子节点。（从每个叶子到根的所有路径上不能有两个连续的红色节点。）
 // 5. 从任一节点到其每个叶子的所有简单路径都包含相同数目的黑色节点。
+// PS: 本文中我们使用"nil叶子"或"空（null）叶子".
 // https://zh.wikipedia.org/wiki/%E7%BA%A2%E9%BB%91%E6%A0%91
 
 // RBTree 红黑树
 type RBTree struct {
-	root *RBLeaf
+	root *TreeNode
 }
 
-// RBLeaf 红黑节点
-type RBLeaf struct {
+// TreeNode 树节点
+type TreeNode struct {
 	key                 int
-	left, right, parent *RBLeaf
+	left, right, parent *TreeNode
 	red                 bool
 }
 
-func (l *RBLeaf) insert(k *RBLeaf) {
+func (n *TreeNode) insert(k *TreeNode) {
 	// 绑个父元素
-	k.parent = l
+	k.parent = n
 	// DFS 深度优先
-	if k.key <= l.key {
+	if k.key <= n.key {
 		// 小于等于走左边
-		if l.left == nil {
+		if n.left == nil {
 			// 左树为空, 左树即是节点
-			l.left = k
+			n.left = k
 		} else {
 			// 递归左树
-			l.left.insert(k)
+			n.left.insert(k)
 		}
 	} else {
 		// 大于走右边
-		if l.right == nil {
+		if n.right == nil {
 			// 右树为空, 右树即节点
-			l.right = k
+			n.right = k
 		} else {
 			// 递归右树
-			l.right.insert(k)
+			n.right.insert(k)
 		}
 	}
 }
 
 // 返回叔父节点
-func (l *RBLeaf) uncle() *RBLeaf {
+func (n *TreeNode) uncle() *TreeNode {
 
-	// 无祖父 或 无父 说明是根 或 根的左右子叶
-	if l.parent == nil || l.grandpa() == nil {
+	// 无祖父 或 无父 说明是根 或 根的左右子树
+	if n.parent == nil || n.grandpa() == nil {
 		return nil
 	}
 
 	// 返回叔父
-	if l.parent == l.grandpa().left {
-		return l.grandpa().right
+	if n.parent == n.grandpa().left {
+		return n.grandpa().right
 	}
 
-	return l.grandpa().left
+	return n.grandpa().left
 
 }
 
+// 返回兄弟节点
+func (n *TreeNode) sibling() *TreeNode {
+	p := n.parent
+	if p != nil {
+		if p.left == n {
+			return p.right
+		}
+		return p.left
+	}
+	return nil
+}
+
 // 返回祖父节点
-func (l *RBLeaf) grandpa() *RBLeaf {
+func (n *TreeNode) grandpa() *TreeNode {
 	// 节点不是根
-	if l.parent != nil {
-		return l.parent.parent
+	if n.parent != nil {
+		return n.parent.parent
 	}
 
 	return nil
 }
 
 // 用目标替换当前节点
-func (t *RBTree) replace(old, new *RBLeaf) {
+func (t *RBTree) replace(old, new *TreeNode) {
 	if new != nil {
 		// 双向链 记得 改绑 父元素
 		new.parent = old.parent
@@ -97,11 +110,10 @@ func (t *RBTree) replace(old, new *RBLeaf) {
 			p.right = new
 		}
 	}
-
 }
 
 // 左旋
-func (t *RBTree) leftRotate(pivot *RBLeaf) *RBTree {
+func (t *RBTree) leftRotate(pivot *TreeNode) *RBTree {
 	if pivot == t.root {
 		return t
 	}
@@ -124,7 +136,7 @@ func (t *RBTree) leftRotate(pivot *RBLeaf) *RBTree {
 }
 
 // 右旋
-func (t *RBTree) rightRotate(pivot *RBLeaf) *RBTree {
+func (t *RBTree) rightRotate(pivot *TreeNode) *RBTree {
 	if pivot == t.root {
 		return t
 	}
@@ -149,7 +161,7 @@ func (t *RBTree) rightRotate(pivot *RBLeaf) *RBTree {
 // BFS 广度优先 打印
 func (t *RBTree) String() (str string) {
 	// 初始化队列
-	queue := []*RBLeaf{t.root}
+	queue := []*TreeNode{t.root}
 	count, line := 0.0, 1.0
 	for true {
 		// 退出条件
@@ -192,7 +204,7 @@ func (t *RBTree) String() (str string) {
 }
 
 // Find 查找
-func (t *RBTree) Find(k int) *RBLeaf {
+func (t *RBTree) Find(k int) *TreeNode {
 	cur := t.root
 	for cur != nil {
 		if k > cur.key {
@@ -208,7 +220,7 @@ func (t *RBTree) Find(k int) *RBLeaf {
 
 // Insert 插入 DFS
 func (t *RBTree) Insert(k int) *RBTree {
-	n := &RBLeaf{key: k, red: true}
+	n := &TreeNode{key: k, red: true}
 	if t.root == nil {
 		t.root = n
 	} else {
@@ -221,12 +233,12 @@ func (t *RBTree) Insert(k int) *RBTree {
 }
 
 // 插入检查
-func (t *RBTree) insertCheck(l *RBLeaf) {
-	if l.parent == nil {
+func (t *RBTree) insertCheck(n *TreeNode) {
+	if n.parent == nil {
 		// 如果是根节点
 		// 根据: 2. 根是黑色。
 		// 设为黑色
-		l.red = false
+		n.red = false
 		return
 
 	}
@@ -235,40 +247,40 @@ func (t *RBTree) insertCheck(l *RBLeaf) {
 	// 因为插入节点是红色
 	// 父节点是红色
 	// 则与规则4冲突 —— 每个红色节点必须有两个黑色的子节点。（从每个叶子到根的所有路径上不能有两个连续的红色节点。）
-	if l.parent.red == true {
+	if n.parent.red == true {
 		// 如果 父(insertCheck2己证明)、叔父都是红色
-		if l.uncle() != nil && l.uncle().red == true {
+		if n.uncle() != nil && n.uncle().red == true {
 			// 把父、叔、爷节点变色
-			l.parent.red = false
-			l.uncle().red = false
-			l.grandpa().red = true
+			n.parent.red = false
+			n.uncle().red = false
+			n.grandpa().red = true
 			// 递归检查 爷节点
-			t.insertCheck(l.grandpa())
+			t.insertCheck(n.grandpa())
 		} else {
 			// 这个场景是叔节点为空或是黑色
 			// 假设我们的树不是“顺拐” 要先做一次旋转, 旋转规则如下:
-			if l == l.parent.right && l.parent == l.grandpa().left {
+			if n == n.parent.right && n.parent == n.grandpa().left {
 				// 如果目标在父节点右边, 且父节点在爷节点左边, 左旋
 				//         黑             红
 				//        / \     染色    / \
 				//       红  黑    ->    黑  黑
 				//      /  \           /  \
 				//     Nil (红)       Nil (红)
-				t.leftRotate(l)
-				// 因为左旋, 这里l.left是之前的父节点
-				l = l.left
-			} else if l == l.parent.left && l.parent == l.grandpa().right {
+				t.leftRotate(n)
+				// 因为左旋, 这里n.left是之前的父节点
+				n = n.left
+			} else if n == n.parent.left && n.parent == n.grandpa().right {
 				// 如果目标在父节点左边, 且父节点在爷节点右边, 右旋
-				t.rightRotate(l)
-				// 因为右旋, 这里l.right是之前的父节点
-				l = l.right
+				t.rightRotate(n)
+				// 因为右旋, 这里n.right是之前的父节点
+				n = n.right
 			}
 
 			// 第二次旋转, 先把父元素染黑、爷元素染红
-			l.parent.red = false
-			l.grandpa().red = true
+			n.parent.red = false
+			n.grandpa().red = true
 
-			if l == l.parent.left && l.parent == l.grandpa().left {
+			if n == n.parent.left && n.parent == n.grandpa().left {
 				// 当目标在父节点左侧且父也在爷左时
 				//         黑             红               黑
 				//        / \     染色    / \      右旋    / \
@@ -276,11 +288,11 @@ func (t *RBTree) insertCheck(l *RBLeaf) {
 				//      /               /                     \
 				//     (红)           (红)                     黑
 				// 右旋其父
-				t.rightRotate(l.parent)
+				t.rightRotate(n.parent)
 			} else {
 				// 否则就是述情况的镜像
 				// 左旋其父
-				t.leftRotate(l.parent)
+				t.leftRotate(n.parent)
 			}
 		}
 	}
@@ -289,38 +301,38 @@ func (t *RBTree) insertCheck(l *RBLeaf) {
 
 // Remove 删除
 // 删除逻辑
-// 如果同时有左右子叶, 则用右子叶的最左子叶代替位置(逻辑上 左子叶的最右子叶也可以),
-// 否则用存在的子叶代替
+// 如果同时有左右子树, 则用右的最左子树代替位置(逻辑上 左子树的最右子树也可以),
+// 否则用存在的子树代替
 func (t *RBTree) Remove(k int) *RBTree {
-	l := t.Find(k)
-	if l == nil {
+	n := t.Find(k)
+	if n == nil {
 		return t
 	}
-	if l.left == nil && l.right == nil {
-		// 左右子叶都为空, 用nil代替
-		t.replace(l, nil)
-	} else if l.left != nil && l.right != nil {
-		// 左右子叶都不为空
-		// 找到右子叶的最左子叶节点
-		cur := l.right
+	if n.left == nil && n.right == nil {
+		// 左右子树都为空, 用nil代替
+		t.replace(n, nil)
+	} else if n.left != nil && n.right != nil {
+		// 左右子树都不为空
+		// 找到右子树的最左子树节点
+		cur := n.right
 		for cur.left != nil {
 			cur = cur.left
 		}
 
 		// 从父节点用它的右树替换它
 		t.replace(cur, cur.right)
-		// 把原节点的左右子叶赋给目标
-		cur.left = l.left
-		cur.right = l.right
+		// 把原节点的左右子树赋给目标
+		cur.left = n.left
+		cur.right = n.right
 		// 替换他
-		t.replace(l, cur)
+		t.replace(n, cur)
 
-	} else if l.left == nil {
-		// 左子叶为空
-		t.replace(l, l.right)
+	} else if n.left == nil {
+		// 左子树为空
+		t.replace(n, n.right)
 	} else {
-		// 右子叶为空
-		t.replace(l, l.left)
+		// 右子树为空
+		t.replace(n, n.left)
 	}
 
 	return t
