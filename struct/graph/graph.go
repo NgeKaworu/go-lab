@@ -83,6 +83,8 @@ func (v *Vertex) FindAllPath(end int) []string {
 
 // ShortestPath 返回所有路径
 func (v *Vertex) ShortestPath(end int) string {
+	// 这个用FindAllPath方法算出最小路径即可, 但是会存在重复子问题
+	// 这个时候需要dp一下, dp算法还在想, 想好更新
 	return ""
 }
 
