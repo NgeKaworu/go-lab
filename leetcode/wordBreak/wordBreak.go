@@ -19,21 +19,21 @@ import (
 // 	return res
 // }
 
-func backtrack(res, memo *[]string, dict *map[string]int, s string) {
-	if s == "" {
-		*res = append(*res, strings.Join(*memo, " "))
-		return
-	}
+// func backtrack(res, memo *[]string, dict *map[string]int, s string) {
+// 	if s == "" {
+// 		*res = append(*res, strings.Join(*memo, " "))
+// 		return
+// 	}
 
-	for k := range s {
-		if _, ok := (*dict)[s[:k+1]]; ok {
-			*memo = append(*memo, s[:k+1])
-			backtrack(res, memo, dict, s[k+1:])
-			*memo = (*memo)[:len(*memo)-1]
-		}
-	}
+// 	for k := range s {
+// 		if _, ok := (*dict)[s[:k+1]]; ok {
+// 			*memo = append(*memo, s[:k+1])
+// 			backtrack(res, memo, dict, s[k+1:])
+// 			*memo = (*memo)[:len(*memo)-1]
+// 		}
+// 	}
 
-}
+// }
 
 func wordBreak(s string, wordDict []string) (sentences []string) {
 	wordSet := make(map[string]int)
