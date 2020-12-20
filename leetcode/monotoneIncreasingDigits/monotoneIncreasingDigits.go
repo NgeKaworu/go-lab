@@ -5,18 +5,14 @@ package monotoneincreasingdigits
 
 import "math"
 
-func monotoneIncreasingDigits(N int) int {
+func monotoneIncreasingDigits(N int) (sol int) {
 	arr := split(N)
 	l := len(arr)
-	for i := l - 1; i >= 1; i-- {
-		if arr[i] < arr[i-1] {
-			for j := i; j < l; j++ {
-				arr[j] = 9
-			}
-			arr[i-1]--
-		}
+	for i := 1; i < l; i++ {
+
 	}
-	return join(arr)
+	sol += arr[0] + int(math.Pow10(l-1))
+	return
 }
 
 func split(n int) (res []int) {
@@ -28,10 +24,10 @@ func split(n int) (res []int) {
 	return
 }
 
-func join(arr []int) (sol int) {
-	l := len(arr) - 1
-	for k, v := range arr {
-		sol += v * int(math.Pow10(l-k))
-	}
-	return
-}
+// func join(arr []int) (sol int) {
+// 	l := len(arr) - 1
+// 	for k, v := range arr {
+// 		sol += v * int(math.Pow10(l-k))
+// 	}
+// 	return
+// }
